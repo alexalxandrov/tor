@@ -1,0 +1,122 @@
+
+name: build-apk
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+env:
+  # Версия Tor Browser, из чьего expert-bundle берутся нативные бинарники.
+  # Обновляется одной строкой. Проверить актуальную: https://dist.torproject.org/torbrowser/
+  TOR_BROWSER_VERSION: "15.0.26"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Необязательная подпись: если секреты не заданы, APK останется unsigned.
+      KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Gradle 8.9 (wrapper не требуется)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Скачать tor expert-bundles (aarch64, armv7, x86_64) + checksums
+        run: |
+          set -euo pipefail
+          V="${TOR_BROWSER_VERSION}"
+          BASE="https://dist.torproject.org/torbrowser/$V"
+          mkdir -p tmp-expert
+          for arch in aarch64 armv7 x86_64; do
+            f="tor-expert-bundle-android-$arch-$V.tar.gz"
+            echo "== $f"
+            curl -fsSL --retry 3 -o "tmp-expert/$f" "$BASE/$f"
+          done
+          curl -fsSL --retry 3 -o tmp-expert/sums.txt "$BASE/sha256sums-unsigned-build.txt"
+          grep 'tor-expert-bundle-android' tmp-expert/sums.txt > tmp-expert/expert-sums.txt
+          (cd tmp-expert && sha256sum -c expert-sums.txt)
+          echo "Checksums OK"
+
+      - name: Распаковать нативные бинарники в jniLibs
+        run: |
+          set -euo pipefail
+          V="${TOR_BROWSER_VERSION}"
+          declare -A MAP=( [aarch64]=arm64-v8a [armv7]=armeabi-v7a [x86_64]=x86_64 )
+          for arch in aarch64 armv7 x86_64; do
+            mkdir -p "tmp-expert/$arch"
+            tar -xzf "tmp-expert/tor-expert-bundle-android-$arch-$V.tar.gz" -C "tmp-expert/$arch"
+            abi="${MAP[$arch]}"
+            dest="app/src/main/jniLibs/$abi"
+            mkdir -p "$dest"
+            torbin=$(find "tmp-expert/$arch" -type f -name 'tor' | head -n1)
+            if [ -z "$torbin" ]; then echo "ERROR: tor binary not found for $arch"; exit 1; fi
+            echo "[$arch] tor: $torbin"
+            cp -L "$torbin" "$dest/libtor.so"
+            for pat in lyrebird obfs4proxy snowflake webtunnel; do
+              p=$(find "tmp-expert/$arch" -type f -name "$pat*" | head -n1)
+              if [ -n "$p" ]; then
+                echo "[$arch] PT: $p"
+                cp -L "$p" "$dest/lib${pat}.so"
+              fi
+            done
+            find "tmp-expert/$arch" -type f -name '*.so' -exec cp -L {} "$dest/" \;
+            ls -la "$dest"
+          done
+
+      - name: geoip и строки мостов Tor Browser -> assets
+        run: |
+          set -euo pipefail
+          mkdir -p app/src/main/assets/tor
+          find tmp-expert -type f \( -name 'geoip' -o -name 'geoip6' \) -exec cp {} app/src/main/assets/tor/ \; || true
+          bconf=$(find tmp-expert -type f -iname '*bridges*' ! -iname '*.asc' | head -n1)
+          if [ -n "$bconf" ]; then
+            echo "builtin bridges: $bconf"
+            cp "$bconf" app/src/main/assets/tor/builtin_bridges_ci
+          else
+            echo "WARN: строки мостов в бандле не найдены — приложение использует assets/builtin_bridges.conf"
+          fi
+          ls -la app/src/main/assets/tor || true
+
+      - name: Сборка release APK
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Переименовать APK
+        run: cp app/build/outputs/apk/release/app-release-unsigned.apk bridgepipe-unsigned.apk
+
+      - name: Подпись APK (только если заданы секреты)
+        if: ${{ env.KEYSTORE_B64 != '' }}
+        run: |
+          set -euo pipefail
+          echo "$KEYSTORE_B64" | base64 -d > keystore.jks
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          BT=$(ls -d "$SDK"/build-tools/* | sort -V | tail -n1)
+          "$BT/zipalign" -f -p 4 bridgepipe-unsigned.apk bridgepipe-aligned.apk
+          "$BT/apksigner" sign --ks keystore.jks --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass "pass:$KEYSTORE_PASSWORD" --key-pass "pass:$KEY_PASSWORD" \
+            --out bridgepipe-signed.apk bridgepipe-aligned.apk
+          rm -f keystore.jks bridgepipe-aligned.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: bridgepipe-apk
+          path: "*.apk"
+          if-no-files-found: error
+
