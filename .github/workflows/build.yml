@@ -90,7 +90,7 @@ jobs:
             echo "== [$arch] содержимое бандла:"
             find "tmp-expert/$arch" -type f | sort
             # В андроид-бандле tor называется libtor.so (в старых версиях — tor).
-            torbin=$(find "tmp-expert/$arch" -type f \( -name 'tor' -o -name 'libtor.so' -o -name 'libtor*' \) | head -n1)
+            torbin=$(find "tmp-expert/$arch" -type f \( -iname 'tor' -o -iname 'libtor.so' -o -iname 'libtor*' \) | head -n1)
             if [ -z "$torbin" ]; then echo "ERROR: tor binary not found for $arch"; exit 1; fi
             echo "[$arch] tor: $torbin"
             cp -L "$torbin" "$dest/libtor.so"
@@ -125,7 +125,7 @@ jobs:
           bconf=$(find tmp-expert -type f -iname '*bridges*' ! -iname '*.asc' | head -n1)
           if [ -n "$bconf" ]; then
             echo "builtin bridges: $bconf"
-            cp "$bconf" app/src/main/assets/tor/builtin_bridges_ci"
+            cp "$bconf" app/src/main/assets/tor/builtin_bridges_ci
           else
             echo "WARN: строки мостов в бандле не найдены — приложение использует assets/builtin_bridges.conf"
           fi
