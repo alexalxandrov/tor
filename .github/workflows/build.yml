@@ -43,10 +43,20 @@ jobs:
           "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" > /dev/null
           echo "Лицензии приняты, SDK готов"
 
-      - name: Gradle 8.9 (wrapper не требуется)
+      - name: Gradle 8.9 — точная фиксация версии
+        run: |
+          set -euo pipefail
+          # На ubuntu-раннере бывает предустановлен другой Gradle, который перебивает PATH
+          # и ломает совместимость с AGP 8.5.2 / Kotlin 2.0.21. Скачиваем ровно 8.9
+          # и ставим её ПЕРВОЙ в PATH, чтобы сборка была детерминированной.
+          curl -fsSL --retry 3 -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-8.9-bin.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          echo "/tmp/gradle-8.9/bin" >> "$GITHUB_PATH"
+          export PATH="/tmp/gradle-8.9/bin:$PATH"
+          gradle --version
+
+      - name: Кэширование Gradle (setup-gradle)
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.9"
 
       - name: Скачать tor expert-bundles (aarch64, armv7, x86_64) + checksums
         run: |
@@ -60,7 +70,7 @@ jobs:
             curl -fsSL --retry 3 -o "tmp-expert/$f" "$BASE/$f"
           done
           curl -fsSL --retry 3 -o tmp-expert/sums.txt "$BASE/sha256sums-unsigned-build.txt"
-                    # В sums.txt есть и 32-битный x86-бандл, который мы не качаем —
+          # В sums.txt есть и 32-битный x86-бандл, который мы не качаем —
           # проверяем только реально скачанные файлы.
           grep -E 'tor-expert-bundle-android-(aarch64|armv7|x86_64)-' tmp-expert/sums.txt > tmp-expert/expert-sums.txt
           (cd tmp-expert && sha256sum -c expert-sums.txt)
@@ -107,7 +117,16 @@ jobs:
           ls -la app/src/main/assets/tor || true
 
       - name: Сборка release APK
-        run: gradle assembleRelease --no-daemon --stacktrace
+        run: |
+          set -euo pipefail
+          export PATH="/tmp/gradle-8.9/bin:$PATH"
+          # Полный путь задачи: если модуль :app вдруг не найдётся, сборка упадёт
+          # с понятной ошибкой, а не "успешно" соберёт ничего (было видно как :noop).
+          gradle :app:assembleRelease --no-daemon --stacktrace
+          echo "---- результат ----"
+          find app/build/outputs -type f -name '*.apk' -exec ls -la {} \;
+          # Страховка: APK обязан существовать и быть непустым.
+          test -s app/build/outputs/apk/release/app-release-unsigned.apk
 
       - name: Переименовать APK
         run: cp app/build/outputs/apk/release/app-release-unsigned.apk bridgepipe-unsigned.apk
