@@ -60,7 +60,9 @@ jobs:
             curl -fsSL --retry 3 -o "tmp-expert/$f" "$BASE/$f"
           done
           curl -fsSL --retry 3 -o tmp-expert/sums.txt "$BASE/sha256sums-unsigned-build.txt"
-          grep 'tor-expert-bundle-android' tmp-expert/sums.txt > tmp-expert/expert-sums.txt
+                    # В sums.txt есть и 32-битный x86-бандл, который мы не качаем —
+          # проверяем только реально скачанные файлы.
+          grep -E 'tor-expert-bundle-android-(aarch64|armv7|x86_64)-' tmp-expert/sums.txt > tmp-expert/expert-sums.txt
           (cd tmp-expert && sha256sum -c expert-sums.txt)
           echo "Checksums OK"
 
