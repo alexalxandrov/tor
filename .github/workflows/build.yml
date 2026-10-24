@@ -146,22 +146,54 @@ jobs:
       - name: Переименовать APK
         run: cp app/build/outputs/apk/release/app-release-unsigned.apk bridgepipe-unsigned.apk
 
-      - name: Подпись APK (только если заданы секреты)
-        if: ${{ env.KEYSTORE_B64 != '' }}
+      - name: Подписать APK для установки
         run: |
           set -euo pipefail
-          echo "$KEYSTORE_B64" | base64 -d > keystore.jks
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
           BT=$(ls -d "$SDK"/build-tools/* | sort -V | tail -n1)
+
+          if [ -n "${KEYSTORE_B64:-}" ]; then
+            : "${KEYSTORE_PASSWORD:?KEYSTORE_PASSWORD is required when KEYSTORE_B64 is configured}"
+            : "${KEY_ALIAS:?KEY_ALIAS is required when KEYSTORE_B64 is configured}"
+            : "${KEY_PASSWORD:?KEY_PASSWORD is required when KEYSTORE_B64 is configured}"
+            SIGNING_KEYSTORE="keystore.jks"
+            printf '%s' "$KEYSTORE_B64" | base64 -d > "$SIGNING_KEYSTORE"
+            STORE_PASS="$KEYSTORE_PASSWORD"
+            ALIAS="$KEY_ALIAS"
+            KEY_PASS="$KEY_PASSWORD"
+            echo "Signing APK with the configured release keystore"
+          else
+            # Installable test build. This temporary key is unique per run;
+            # configure GitHub signing secrets for upgrades with the same certificate.
+            SIGNING_KEYSTORE="/tmp/bridgepipe-ci.p12"
+            CI_SIGN_PASSWORD="$(openssl rand -hex 24)"
+            keytool -genkeypair -noprompt -v \
+              -storetype PKCS12 \
+              -keystore "$SIGNING_KEYSTORE" \
+              -storepass "$CI_SIGN_PASSWORD" \
+              -keypass "$CI_SIGN_PASSWORD" \
+              -alias bridgepipe-ci \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=BridgePipe CI, OU=Development, O=BridgePipe, C=US"
+            STORE_PASS="$CI_SIGN_PASSWORD"
+            ALIAS="bridgepipe-ci"
+            KEY_PASS="$CI_SIGN_PASSWORD"
+            echo "::warning::No release signing secrets configured. APK will be signed with a temporary test key; future builds require uninstalling the previous test build before reinstalling."
+          fi
+
           "$BT/zipalign" -f -p 4 bridgepipe-unsigned.apk bridgepipe-aligned.apk
-          "$BT/apksigner" sign --ks keystore.jks --ks-key-alias "$KEY_ALIAS" \
-            --ks-pass "pass:$KEYSTORE_PASSWORD" --key-pass "pass:$KEY_PASSWORD" \
+          "$BT/apksigner" sign \
+            --ks "$SIGNING_KEYSTORE" --ks-key-alias "$ALIAS" \
+            --ks-pass "pass:$STORE_PASS" --key-pass "pass:$KEY_PASS" \
             --out bridgepipe-signed.apk bridgepipe-aligned.apk
-          rm -f keystore.jks bridgepipe-aligned.apk
+          "$BT/apksigner" verify --verbose --print-certs bridgepipe-signed.apk
+          test -s bridgepipe-signed.apk
+          rm -f bridgepipe-aligned.apk
+          if [ "${SIGNING_KEYSTORE:-}" = "keystore.jks" ]; then rm -f keystore.jks; else rm -f "$SIGNING_KEYSTORE"; fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: bridgepipe-apk
-          path: "*.apk"
+          path: "bridgepipe-signed.apk"
           if-no-files-found: error
