@@ -41,7 +41,7 @@ Android-приложение (Kotlin), рассчитанное на работ�
 3. CI скачает официальные tor-expert-bundles (aarch64 + armv7 + x86_64),
    проверит sha256, разложит бинарники в `jniLibs`, скопирует geoip и
    строки мостов в assets, соберёт **release APK**.
-4. Готовый `bridgepipe-unsigned.apk` — в артефактах запуска
+4. Готовый подписанный `bridgepipe-signed.apk` — в артефактах запуска (`bridgepipe-apk`).
    (**build-apk → run → Artifacts**).
 
 Нативные бинарники (`libtor.so`, `liblyrebird.so`, `libsnowflake.so`)
