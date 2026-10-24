@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Порты"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="SOCKS-порт (9050)">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/setSocksPort"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:hint="Control-порт (9051)">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/setControlPort"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <CheckBox
+            android:id="@+id/setSocksBindAll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Открыть SOCKS на все интерфейсы (0.0.0.0) — используйте с осторожностью" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:text="Мосты"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Сколько лучших мостов передавать в tor (топ-N)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/setTopN"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <CheckBox
+            android:id="@+id/setUseBridges"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Использовать мосты (если выключено — прямое подключение к сети tor)" />
+
+        <CheckBox
+            android:id="@+id/setFetchViaTor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Качать списки мостов через уже поднятый туннель (SOCKS)" />
+
+        <CheckBox
+            android:id="@+id/setBridgesDb"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Источник BridgesDB (bridges.torproject.org)" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="URL BridgesDB (transport подставится автоматически)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/setBridgesDbUrl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textUri" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Свои источники: один URL в строке. Формат: URL |sni=домен (опционально)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/setCustomSources"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top"
+                android:inputType="textMultiLine|textUri"
+                android:minLines="3" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:text="Транспорт и сеть"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <CheckBox
+            android:id="@+id/setReducedPadding"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Режим 2G: сниженный padding (меньше трафика, stealth-режим)" />
+
+        <CheckBox
+            android:id="@+id/setAllowIpv6"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Разрешить IPv6" />
+
+        <CheckBox
+            android:id="@+id/setSnowflake"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Включить snowflake (не рекомендуется на 2G)" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="BandwidthRate, KBytes/сек (0 = без ограничения)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/setBandwidthRate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="SocksTimeout, сек (для медленных сетей)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/setSocksTimeout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:text="Проверка мостов"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Таймаут пинга, сек">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/setProbeTimeout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:hint="Параллельных пингов">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/setProbeConcurrency"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:text="SNI-подделка (для своих HTTPS-запросов приложения)"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <CheckBox
+            android:id="@+id/setSniEnabled"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Подменять SNI в TLS-соединениях приложения (сертификат при этом НЕ проверяется — риск MITM)" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Значение SNI (имя хоста)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/setSniHost"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textUri" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:text="Логи"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Verbosity лога tor (stdout и лог-экран всегда verbose):" />
+
+        <Spinner
+            android:id="@+id/setTorLogLevel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:text="Дополнительно"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <CheckBox
+            android:id="@+id/setAutoApply"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Автоприменение лучших мостов при зависании bootstrap" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Произвольный torrc-override (строки дописываются в конфиг как есть, полная совместимость с tor)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/setTorrcOverride"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="top"
+                android:inputType="textMultiLine"
+                android:minLines="4" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <Button
+            android:id="@+id/btnSaveSettings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Сохранить настройки" />
+    </LinearLayout>
+</ScrollView>

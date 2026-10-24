@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <TextView
+            android:id="@+id/statusState"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Остановлено"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/statusProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/statusBw"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/statusSocks"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SOCKS5: 127.0.0.1:9050"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/statusBridgesInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="6dp"
+            android:text=""
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btnStart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="Запустить туннель"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/btnRefreshSources"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Обновить мосты из источников" />
+
+        <Button
+            android:id="@+id/btnProbe"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Проверить мосты (TCP-пинг)" />
+
+        <Button
+            android:id="@+id/btnApplyBest"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Применить лучшие мосты (рестарт tor)" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="10dp"
+            android:text="Как пользоваться: укажите браузеру/приложению SOCKS5-прокси 127.0.0.1:9050. Все события пишутся во вкладке «Лог» (verbose по умолчанию)."
+            android:textSize="12sp" />
+    </LinearLayout>
+</ScrollView>

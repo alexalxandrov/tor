@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <EditText
+        android:id="@+id/importText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="top"
+        android:hint="obfs4 1.2.3.4:9999 ABCD... cert=... iat-mode=0&#10;webtunnel ...&#10;(до 2000 строк)"
+        android:inputType="textMultiLine"
+        android:minLines="8"
+        android:typeface="monospace" />
+</ScrollView>
