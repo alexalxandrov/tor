@@ -87,18 +87,33 @@ jobs:
             abi="${MAP[$arch]}"
             dest="app/src/main/jniLibs/$abi"
             mkdir -p "$dest"
-            torbin=$(find "tmp-expert/$arch" -type f -name 'tor' | head -n1)
+            echo "== [$arch] содержимое бандла:"
+            find "tmp-expert/$arch" -type f | sort
+            # В андроид-бандле tor называется libtor.so (в старых версиях — tor).
+            torbin=$(find "tmp-expert/$arch" -type f \( -name 'tor' -o -name 'libtor.so' -o -name 'libtor*' \) | head -n1)
             if [ -z "$torbin" ]; then echo "ERROR: tor binary not found for $arch"; exit 1; fi
             echo "[$arch] tor: $torbin"
             cp -L "$torbin" "$dest/libtor.so"
+            # Транспорты в андроид-бандле тоже лежат как .so (libLyrebird.so покрывает
+            # obfs4+webtunnel+meek+snowflake, libsnowflake.so и пр.) — копируем все.
+            find "tmp-expert/$arch" -type f -name '*.so' ! -name 'libtor.so' -exec cp -L {} "$dest/" \;
+            # Нормализуем имена к строчным: приложение ждёт liblyrebird.so/libsnowflake.so
+            # (в бандле Tor Browser используется libLyrebird.so с большой буквы).
+            for f in "$dest"/*; do
+              base=$(basename "$f")
+              lower="$dest/$(printf '%s' "$base" | tr 'A-Z' 'a-z')"
+              if [ "$base" != "libtor.so" ] && [ "$base" != "$(basename "$lower")" ] && [ ! -e "$lower" ]; then
+                mv "$f" "$lower"
+              fi
+            done
+            # На случай старых бандлов с транспорами не-.so (lyrebird, obfs4proxy, ...).
             for pat in lyrebird obfs4proxy snowflake webtunnel; do
-              p=$(find "tmp-expert/$arch" -type f -name "$pat*" | head -n1)
+              p=$(find "tmp-expert/$arch" -type f -name "$pat*" ! -name '*.so' | head -n1)
               if [ -n "$p" ]; then
-                echo "[$arch] PT: $p"
+                echo "[$arch] PT (bin): $p"
                 cp -L "$p" "$dest/lib${pat}.so"
               fi
             done
-            find "tmp-expert/$arch" -type f -name '*.so' -exec cp -L {} "$dest/" \;
             ls -la "$dest"
           done
 
