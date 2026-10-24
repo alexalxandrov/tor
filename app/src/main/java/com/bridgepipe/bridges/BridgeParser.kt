@@ -9,7 +9,7 @@ import java.util.Locale
  */
 object BridgeParser {
 
-    val TRANSPORTS = arrayOf("obfs4", "webtunnel", "snowflake", "meek_lite", "meek", "vanilla")
+    val TRANSPORTS = arrayOf("obfs4", "webtunnel", "snowflake", "meek_lite", "meek", "conjure", "vanilla")
 
     private val HOST_PORT_BR = Regex("\\[(([0-9A-Fa-f]{1,4}:){1,7}[0-9A-Fa-f]{0,4})\\]:(\\d{1,5})")
     private val HOST_PORT_IP = Regex("(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}):(\\d{1,5})")
@@ -39,13 +39,25 @@ object BridgeParser {
             }
         }
 
+        // Строка-без-префикса начинается с неизвестного слова (scramblesuit, obfs2, ...) —
+        // не поддерживаем, иначе он "протекал" бы в torrc как vanilla с мусором
+        // и tor ругался: "no configured transport called ...".
+        if (transport == "vanilla") {
+            val firstToken = raw.substringBefore(' ')
+            if (firstToken.isNotEmpty() && !firstToken.contains(":") &&
+                !firstToken.startsWith("$") && !firstToken.startsWith("[")
+            ) {
+                return null
+            }
+        }
+
         val hp = hostPortOf(body) ?: return null
 
         // Требования к обязательным параметрам транспортов
         val bl = body.lowercase(Locale.US)
         when (transport) {
             "obfs4" -> if (!bl.contains("cert=")) return null
-            "webtunnel", "snowflake", "meek", "meek_lite" -> if (!bl.contains("url=")) return null
+            "webtunnel", "snowflake", "meek", "meek_lite", "conjure" -> if (!bl.contains("url=")) return null
         }
 
         return if (transport == "vanilla") body else "$transport $body"

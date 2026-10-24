@@ -206,16 +206,23 @@ class TorService : Service() {
             // stdout tor -> AppLog (verbose по умолчанию)
             scope.launch(Dispatchers.IO) {
                 try {
-                    BufferedReader(InputStreamReader(proc.inputStream, Charsets.ISO_8859_1)).useLines { lines ->
-                        for (l in lines) {
-                            AppLog.t("TOR", l)
+                    try {
+                        BufferedReader(InputStreamReader(proc.inputStream, Charsets.ISO_8859_1)).useLines { lines ->
+                            for (l in lines) {
+                                AppLog.t("TOR", l)
+                            }
                         }
+                    } catch (_: Exception) {
+                    }
+                    // ГОНКА (была причиной краха): после destroy() процесс может ещё
+                    // не быть собран JVM, и exitValue() кидал IllegalThreadStateException
+                    // мимо try/catch — необработанное исключение убивало приложение молча.
+                    val code = try { proc.exitValue().toString() } catch (_: Exception) { "?" }
+                    AppLog.w("Tor", "процесс tor завершился (код $code)")
+                    if (wantRunning) {
+                        setState(State.FAILED, "процесс tor завершился (код $code)")
                     }
                 } catch (_: Exception) {
-                }
-                AppLog.w("Tor", "процесс tor завершился (код ${proc.exitValue()})")
-                if (wantRunning) {
-                    setState(State.FAILED, "процесс tor завершился (код ${proc.exitValue()})")
                 }
             }
 
@@ -273,11 +280,19 @@ class TorService : Service() {
                 delay(5000)
                 if (state != State.BOOTSTRAPPING) continue
                 val stuckMs = System.currentTimeMillis() - lastProgressChange
-                if (stuckMs > 90000) {
+                // 180с (было 90с): на 2G загрузка консенсуса через мосты — это минуты,
+                // и 90с без смены процента — норма, а не зависание.
+                if (stuckMs > 180000) {
                     AppLog.w("Watchdog", "bootstrap без прогресса ${stuckMs / 1000}с — переприменяю лучшие мосты")
                     lastProgressChange = System.currentTimeMillis()
-                    stopTorInternal()
-                    startTorInternal()
+                    // Рестарт в ОТДЕЛЬНОЙ корутине: stopTorInternal() отменяет watchdogJob,
+                    // и если рестартить в самой корутине watchdog, он отменил бы сам себя
+                    // (тор убивался и больше не поднимался).
+                    scope.launch {
+                        stopTorInternal()
+                        startTorInternal()
+                    }
+                    break
                 }
             }
         }

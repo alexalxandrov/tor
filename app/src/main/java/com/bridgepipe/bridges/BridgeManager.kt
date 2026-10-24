@@ -92,9 +92,13 @@ class BridgeManager(
         val picked = ArrayList<String>()
         for (b in db.best()) {
             if (picked.size >= prefs.topN.coerceIn(1, 200)) break
-            if (b.transport != "vanilla" && b.transport !in availableTransports) continue
-            if (b.transport == "snowflake" && !prefs.snowflakeEnabled) continue
-            picked.add(b.line)
+            // Транспорт вычисляем из строки заново: в старых записях БД поле transport
+            // могло быть неверным (conjure сохранялся как vanilla и попадал в torrc).
+            val line = BridgeParser.normalize(b.line) ?: continue
+            val t = BridgeParser.transportOf(line)
+            if (t != "vanilla" && t !in availableTransports) continue
+            if (t == "snowflake" && !prefs.snowflakeEnabled) continue
+            picked.add(line)
         }
         return picked
     }
